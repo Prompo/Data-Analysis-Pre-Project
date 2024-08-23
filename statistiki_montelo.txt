@@ -1,0 +1,193 @@
+data<- read.table("cholesterol.txt",header=TRUE)
+chol<- data$y
+age<- data$x
+
+
+#Διαγραμμα Διασπορας 
+plot(chol, age, main = "Διάγραμμα Διασποράς", xlab = "Χοληστερηνη", ylab = "Ηλικια", pch = 16, col = "blue")
+
+#Προσαρμογή μοντέλου y=β0+β1x στα δεδομένα μας
+model<- lm(chol~age)
+summary(model)
+
+#Ελεγχος σημαντικοτητας
+z<- mean(age)/(sd(age)/sqrt(24))
+> z
+[1] 14.39322
+> pvalue<- 2*pnorm(-abs(z))
+> pvalue
+[1] 5.707435e-47
+
+#Υπολογισμός διαστήματος εμπιστοσύνης
+> confidence_interval <- t.test(age)$conf.int
+> confidence_interval 
+[1] 33.75153 45.08180
+attr(,"conf.level")
+[1] 0.95
+
+> t_value <- qt(0.975, df = 23)
+> t_value 
+[1] 2.068658
+> x2<- mean(age)+t_value*(sd(age)/sqrt(24))
+> x1<- mean(age)-t_value*(sd(age)/sqrt(24))
+> x1
+[1] 33.75153
+> x2
+[1] 45.0818
+
+
+   
+#Ερωτημα Γ 
+#Υπολογισμός προβλεπόμενης τιμής και αναμενόμενης τιμής
+E(y)=b0 + b1*x , όπου b0=1.279868 , b1=0.052625 και x0=35.
+Άρα, E(y)=1.279868 +0.052625*35
+
+Χρησιμοποιώντας την R, έχουμε ότι:
+> x0 <- 35
+> E_y <- coef(model)[1] + coef(model)[2] * x0
+> E_y
+(Intercept) 
+    3.12174 
+	
+#Υπολογισμός T student
+t_critical <- qt(0.995, 22)
+
+> sum<-0
+> for (i in 1:24){
++ sum<- sum+ (age[i]- mean(age))^2
++ }
+> margin_error<- t_critical*sd(chol)*sqrt(1/n+((x0-mean(age))^2)/sum)
+> confidence_interval<- c(E_y - margin_error, E_y + margin_error)
+> confidence_interval
+(Intercept) (Intercept) 
+   2.649497    3.593983
+
+#Διάγραμμα Κανονικής Κατανομής
+> residuals <- resid(model)
+> hist(residuals, probability = TRUE, col = "skyblue", border = "white", main = "Ιστόγραμμα Κανονικής Κατανομής")
+> lines(density(residuals), col = "red", lwd = 2)
+
+#Διάγραμμα υπολοίπων
+> qqnorm(residuals, main = "Q-Q Διάγραμμα Υπολοίπων")
+> qqline(residuals)
+
+#Γραφική Παράσταση ei με yi^ για τα υπόλοιπα ei
+plot(data$x, residuals, xlab = "x", ylab = "Υπόλοιπα", main = "Διάγραμμα Διασποράς των Υπολοίπων")
+abline(h = 0, col = "red")
+
+Άσκηση 3
+α) 
+plot(y~x) #Με τη συγκεκριμένη εντολή πραγματοποιώ διάγραμμα διασποράς μεταξύ της εξαρτημένης μεταβλητής y και της ανεξάρτητης x
+
+Η άσκηση μας ζητάει να προσαρμόσουμε τα δεδομένα μας στο μοντέλο 100/(100-y)=a+b/x. Ωστόσο, το συγκεκριμένο μοντέλο είναι μη γραμμικό. 
+Για να το μετασχηματίσουμε σε γραμμικό εκτελούμε τις ακόλουθες ενέργειες.
+Θέτουμε y*=100/(100-y) και x*=1/x και έτσι έχουμε: y*=a+bx*
+Αυτό σε κώδικα μεταφράζεται:
+y_asteri<- 100/(100-y)
+x_asteri<- 1/x
+model_asteri<- lm(y_asteri~x_asteri)
+summary(model_asteri) 
+
+Call:
+lm(formula = y_asteri ~ x_asteri)
+
+Residuals:
+     Min       1Q   Median       3Q      Max 
+-0.34675 -0.31185 -0.07989  0.18582  0.74362 
+
+Coefficients:
+            Estimate Std. Error t value Pr(>|t|)    
+(Intercept)   2.0675     0.1596   12.96 1.19e-06 ***
+x_asteri     16.2662     1.3232   12.29 1.78e-06 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 0.3952 on 8 degrees of freedom
+Multiple R-squared:  0.9497,    Adjusted R-squared:  0.9434 
+F-statistic: 151.1 on 1 and 8 DF,  p-value: 1.783e-06
+
+β)
+i)
+Η εκτίμηση των σημείων γίνεται μέσω του μοντέλου γραμμικής παλλινδρόμησης y=a+bx. Στην προκειμένη περίπτωση πρόκειται για το μετασχηματισμένο μας μοντέλο.
+Αυτό που έχουμε να κάνουμε είναι να προβλέψουμε για κάθε τιμή του X μία τιμή του y.
+Με τις παρακάτω εντολές μπορούμε να εκτιμήσουμε σημειακά την άγνωστη μεταβλητή y
+
+predicted_y <- predict(model_asteri)
+print(predicted_y)
+
+Αποτέλεσμα:
+       1        2        3        4        5        6        7        8 
+7.489603 4.391274 3.423046 3.024364 2.718177 2.532277 2.428999 2.363277 
+       9       10 
+2.299902 2.203079 
+
+> y_estimates <- 100 - (100 / predicted_y)
+> y_estimates
+       1        2        3        4        5        6        7        8 
+86.64816 77.22757 70.78626 66.93520 63.21063 60.50985 58.83078 57.68588 
+       9       10 
+56.51989 54.60899 
+
+ii)
+x0<- 1/20
+n<- 10
+> E_y <- coef(model_asteri)[1] + coef(model_asteri)[2] * x0
+> E_y_asteri<- 100-(100/E_y)
+> E_y_asteri
+(Intercept) 
+   65.28789 
+
+> sum<- 0
+> for (i in 1:10){
++ sum<- sum+ (x_asteri[i]- mean(x_asteri))^2
++ }
+
+> margin_error<- t_critical*sd(y_asteri)*sqrt(1/n+(((1/x0)-mean(x_asteri))^2)/sum)
+
+> confidence_interval<- c(E_y_asteri - margin_error, E_y_asteri + margin_error)
+> confidence_interval
+(Intercept) (Intercept) 
+   64.03446    66.54132 
+   
+   
+1ος Τρόπος:
+> prediction_interval <- predict(model_asteri,  interval = "confidence", level = 0.95)
+> prediction_interval<- 100-100/prediction_interval
+> prediction_interval
+        fit      lwr      upr
+1  86.64816 84.96314 87.99359
+2  77.22757 75.22559 78.93018
+3  70.78626 68.08939 73.06281
+4  66.93520 63.39677 69.84982
+5  63.21063 58.52102 66.94754
+6  60.50985 54.77517 64.95383
+7  58.83078 52.35583 63.75637
+8  57.68588 50.66564 62.95705
+9  56.51989 48.91001 62.15667
+10 54.60899 45.95635 60.87335
+
+
+
+   
+
+
+2ος Τρόπος:
+> t.test(y_asteri)
+
+        One Sample t-test
+
+data:  y_asteri
+t = 6.2562, df = 9, p-value = 0.0001485
+alternative hypothesis: true mean is not equal to 0
+95 percent confidence interval:
+ 2.098722 4.476078
+sample estimates:
+mean of x 
+   3.2874 
+   
+   
+> low_interv<- 2.098722
+> max_interv<- 4.476078  
+> interval_of_confidence<- c(100-100/low_interv, 100-100/max_interv)
+> interval_of_confidence
+[1] 52.35196 77.65901
